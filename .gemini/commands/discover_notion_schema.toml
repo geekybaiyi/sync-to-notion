@@ -1,0 +1,39 @@
+# TOML configuration for discovering and documenting Notion database schemas.
+
+command_name = "discover_notion_schema"
+description = "A repeatable process to find key Notion databases, retrieve their schemas, and save the details to a local markdown file."
+output_file = "output/reference_notion_schema.md"
+
+# A simple list of the key database names to search for.
+database_names = [
+    "Areas Of Focus",
+    "Projects",
+    "Tasks",
+    "Years",
+    "Quarters",
+    "Months",
+    "Weeks",
+    "Daily Logs",
+    "Time Sheet",
+    "Goals",
+    "Journals"
+]
+
+# A template for the prompt to use if a database search fails.
+# The '{{db_name}}' placeholder will be replaced with the database name from the list above.
+failure_template = "I couldn't find a database named '{{db_name}}'. What is the correct name for the database that holds your {{db_name}}?"
+
+prompt = """
+You are an expert Notion automation assistant.
+Your task is to discover the schema of the Notion databases listed in the `database_names` array in this TOML file.
+For each database, you will:
+1.  Search for the database by its name using the `API_post_search` tool.
+2.  If the database is found, retrieve its schema using the `API_retrieve_a_database` tool.
+3.  Format the schema into a human-readable markdown format.
+4.  Append, not overwrite, the formatted schema to the file specified in the `output_file` variable. Create intermediate path if necessary.
+5.  If a database is not found, print the message from the `failure_template` to the console, replacing `{{db_name}}` with the name of the database.
+
+Start by clearing the output file.
+Then, iterate through the `database_names` and perform the steps above for each database.
+Finally, confirm that the process is complete.
+"""
