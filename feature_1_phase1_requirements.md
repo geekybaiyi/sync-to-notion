@@ -134,17 +134,20 @@ For each event:
 ## No-Code Implementation Workflow
 
 
-### Step 1: Cache Initialization (Prompt-Driven)
+### Step 1: Cache Management (Gemini CLI Commands)
 ```
-User: "Refresh calendar sync cache"
+User: gemini refresh_cache_projects
+User: gemini refresh_cache_daily_logs
+
+OR (automatic during sync):
+User: gemini sync_calendar_events --file="events.csv"
+(Auto-checks cache age and refreshes if stale >1 week)
 
 Agent: Uses Notion MCP to:
-1. Check Projects cache file age (output/cache_projects.md)
-2. If stale (>1 week): Query active Projects and save to cache
-3. Check Daily Logs cache file age (output/cache_daily_logs.md)
-4. If stale (>1 week): Query current + next 21 Daily Logs and save to cache
-5. Load cache files into conversation context
-6. Report cache status: "X projects, Y daily logs loaded"
+1. Check cache file age (output/cache_*.md)
+2. If stale (>1 week): Query database and save to cache
+3. Load cache files into conversation context
+4. Report cache status: "X projects, Y daily logs loaded"
 ```
 
 ### Step 2: Calendar Sync (Gemini CLI Command)
