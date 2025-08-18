@@ -32,6 +32,5 @@ This phase relies on the user providing the calendar data directly, removing the
     *   **Parse Input:** The agent will parse the CSV data provided by the user.
     *   **Process Each Event:** For each row in the data (and if the `Event ID` doesn't already exist):
         *   **Find Project:** Search the "Projects" database for a relevant project based on the event `title`.
-        *   **Create Task:** Create a new task in the "Tasks" database, linking it to the project and populating the `Event ID` field.
-        *   **Create Timesheet Entry:** Create the associated timesheet entry, linking it to the new task and using the `start_time` and `end_time`.
+        *   **Create Task:** Create a new task in the "Tasks" database, linking it to the project and populating the `Event ID` field, linking it to a matching Daily log entry
     *   **Report Back:** The agent will confirm when the sync is complete and report how many new events were added.
