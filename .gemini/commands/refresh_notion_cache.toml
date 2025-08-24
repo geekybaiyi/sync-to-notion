@@ -1,0 +1,26 @@
+command_name = "refresh_notion_cache"
+description = "Refreshes the cache for a specified Notion database (Projects or Daily Logs)."
+
+prompt = """
+You are an expert Notion assistant. Your task is to refresh the cache for the {{args}} database.
+
+1.  **Determine Database ID and Cache File**:
+    *   If `{{args}}` is 'Projects':
+        *   Database ID: `15b1eee3-fc62-47ce-8a85-5e41ca832d07`
+        *   Cache file: `output/cache_projects.md`
+        *   Filter: Year is "YR2025" AND (Status is "Active" or Status is "Light-Touch").
+    *   If `{{args}}` is 'DailyLogs':
+        *   Database ID: `1d3552d6-4163-4835-9b4e-08e9cb27e235`
+        *   Cache file: `output/cache_daily_logs.md`
+        *   Filter: Date is on or after today, and for the next 21 days.
+    *   Otherwise, report an error: "Invalid database_name provided. Please use 'Projects' or 'DailyLogs'."
+
+2.  **Query the Database**:
+    *   Use the determined Database ID and filter to query the Notion database.
+
+3.  **Extract Properties**: Refer to @output/reference_notion_schema.md for the exact properties to extract for the specified database. Extract the page id and all properties except those of type 'button', 'formula', 'relation', or 'rollup'.
+
+4.  **Save to Cache**: Save the extracted data as a markdown list into the determined cache file. Overwrite the file if it exists.
+
+5.  **Report**: Output a confirmation message like "✅ Successfully cached [X] {{args}} to [cache_file_path]."
+"""

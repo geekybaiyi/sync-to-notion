@@ -17,31 +17,27 @@ All logic must be expressed through natural language prompts that trigger approp
 ### What's INCLUDED in Phase 1:
 - ✅ Create Tasks from calendar events
 - ✅ Link Tasks to existing Projects (if found)
-- ✅ **Link Tasks to current Month/Week/Daily Log** (Added)
+- ✅ Link Tasks to current Daily Log
 - ✅ Set proper Task properties (Date, Type, Status)
 - ✅ Report sync results with linking status
 - ✅ Smart caching based on database update frequency
 
-### What's EXCLUDED from Phase 1:
-- ❌ ~~Create/Update Timesheet entries~~ (Future phase)
-- ❌ ~~Create new Projects~~ (Report only)
-- ❌ ~~Goal linking~~ (Handled by Notion automation)
-
-## Updated CSV Input Format
+## CSV Input Format
 
 ### Required Column Order:
 ```csv
-title,date,start_time,end_time,project
-"Sprint Planning","2025-01-17","10:00","11:00","Development"
-"Doctor Checkup","2025-01-18","14:00","15:30","Health"
-"Client Call","2025-01-19","10:00","11:00",""
+title,date,start_time,end_time,event_id,project
+"Sprint Planning","2025-01-17","10:00","11:00","EVENT_ID_1","Development"
+"Doctor Checkup","2025-01-18","14:00","15:30","EVENT_ID_2","Health"
+"Client Call","2025-01-19","10:00","11:00","EVENT_ID_3",""
 ```
 
 ### Column Definitions:
 - **title**: Event name → Task Name
 - **date**: Event date → Task Do Time + Daily Log linking
-- **start_time**: Event start → Used for Do Time
-- **end_time**: Event end → (Stored but not used in Phase 1)
+- **start_time**: Event start → Used for Do Time (Start)
+- **end_time**: Event end → Used for Do Time (End)
+- **event_id**: Unique event ID from the calendar → Used for duplicate detection and updates
 - **project**: Project hint for matching → Used to find existing project
 
 ## Database Linking Strategy
@@ -60,6 +56,20 @@ title,date,start_time,end_time,project
 
 **Projects Database** (ID: `15b1eee3-fc62-47ce-8a85-5e41ca832d07`)
 - For project matching and linking (read-only)
+
+## Database Schema Reference
+
+To ensure accurate property extraction and database interaction, a schema reference file, `discover_notion_schema.toml`, is maintained in the `.gemini/commands/` directory. This file contains the latest schema information for all relevant Notion databases, including property names and their types.
+
+### Refreshing Schema Reference
+
+If there are any changes to the Notion database schemas (e.g., new properties, changed property types), this schema reference file should be refreshed.
+
+**Command:**
+```
+gemini discover_notion_schema
+```
+This command will query Notion for the latest schema information for all configured databases and update `discover_notion_schema.toml` accordingly.
 
 ## Caching Strategy
 
@@ -126,8 +136,7 @@ For each event:
 2. Look up the Daily Logs cache to find page with matching Date property
 3. If found: Link Task to Daily Log via "Scheduled Do Day" relation
 4. If not found: Stop processing and ask user "No Daily Log found for 2025-01-17. Create missing Daily Log entries first?"
-5. Event ID generation: Simple concatenation hash(date + start_time + title)
-   Example: hash("2025-01-1710:00Sprint Planning")
+5. Use the `event_id` from the CSV as the unique identifier.
 ```
 
 
@@ -158,21 +167,24 @@ Agent (via Gemini CLI):
 1. Auto-check cache age and refresh if stale (1 week)
 2. Read CSV from file path OR parse provided CSV data
 3. Extract events into structured data
-4. Generate Event IDs using hash logic
-5. Validate required fields
-6. Proceed to sync workflow
+4. Validate required fields
+5. Proceed to sync workflow
 ```
 
 ### Step 3: Event Processing (Notion MCP Integration)
 ```
 For each event:
-1. Check duplicates using Notion MCP (query Tasks database for Event ID)
-2. Match project using cached data + fuzzy logic (active projects only)
-3. Find Daily Log entry in cache by date
-4. If Daily Log missing: Stop and ask user to create missing entries
-5. Create Task using Notion MCP with Project + Daily Log relations
-6. Report results with linking status
-```
+1. Check for existing task using Notion MCP (query Tasks database for `event_id`).
+2. If task exists:
+    - Check if `date`, `start_time` or `end_time` has changed.
+    - If changed, update the existing task's `Do Time` (with start and end times) and `Scheduled Do Day`.
+    - Report the task as updated.
+3. If task does not exist:
+    - Match project using cached data + fuzzy logic (active projects only).
+    - Find Daily Log entry in cache by date.
+    - If Daily Log missing: Stop and ask user to create missing entries.
+    - Create Task using Notion MCP with Project + Daily Log relations.
+    - Report the task as created.
 
 ## Project Matching Strategy (No New Creation)
 

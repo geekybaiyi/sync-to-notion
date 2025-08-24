@@ -1,0 +1,57 @@
+command_name = "sync_calendar_events"
+description = "Syncs calendar events from a CSV file or data to the Notion Tasks database."
+
+# Parameters for CSV input
+prompt = """
+You are a powerful Notion automation agent. Your goal is to sync calendar events to the Tasks database, following the rules in `feature_1_phase1_requirements.md`.
+
+The input for this command is provided via `{{args}}`. This can be either a path to a CSV file containing calendar events, or the CSV data as a string.
+
+**Workflow**:
+
+1.  **Cache Management**:
+    *   Check the age of `output/cache_projects.md` and `output/cache_daily_logs.md`.
+    *   If a cache file is older than 1 week, automatically call `refresh_notion_cache` with the appropriate `database_name` parameter.
+    *   Load the (potentially refreshed) cache files into your context.
+    *   Report the cache status.
+
+2.  **Input Processing**:
+    *   Determine if `{{args}}` is a file path or raw CSV data. If it's a file path, read the CSV data from the file. Otherwise, use `{{args}}` directly as the CSV data.
+    *   Parse the CSV into a list of events.
+    *   Validate that each event has the required fields (`title`, `date`, `start_time`, `end_time`, `event_id`).
+
+3.  **Event Syncing Loop**:
+    *   For each event in the list:
+        *   **Check for Existing Task**: Query the Tasks database (`eec0f1cd-7b83-40fe-a558-17b106406ef4`) using the `event_id` to see if a task with this `Event ID` already exists.
+        *   **Update Task or Create New Task**:
+            *   If a task with the given `event_id` exists:
+                *   Check if the `date`, `start_time`, or `end_time` has changed.
+                *   If it has changed, update the `Do Time` (with start and end times) and `Scheduled Do Day` properties of the existing task.
+                *   Report the task as updated.
+            *   If no task with the given `event_id` exists:
+                *   **Match Project**:
+                    *   If the `project` column has a value, search the cached projects for a match.
+                    *   If the `project` column is empty, use AI reasoning to find a match based on the event `title`.
+                    *   If a project is found, get its Notion page ID.
+                *   **Match Daily Log**:
+                    *   Extract the `date` from the event.
+                    *   Find the matching `Daily Log` from the cached daily logs.
+                    *   If no `Daily Log` is found, **STOP** processing and ask the user: "No Daily Log found for [date]. Create missing Daily Log entries first?".
+                *   **Create Task**:
+                    *   Create a new page in the Tasks database (`eec0f1cd-7b83-40fe-a558-17b106406ef4`).
+                    *   Set the following properties:
+                        *   `Name`: Event `title`.
+                        *   `Event ID`: The event `event_id` from the CSV.
+                        *   `Do Time`: The event `date`, `start_time` and `end_time`.
+                        *   `Project`: Relation to the matched project's page ID (if found).
+                        *   `Scheduled Do Day`: Relation to the matched Daily Log's page ID.
+
+4.  **Final Report**:
+    *   After processing all events, generate a summary report detailing:
+        *   How many events were processed.
+        *   How many new tasks were created.
+        *   How many tasks were updated.
+        *   How many duplicates were skipped (no changes).
+        *   A list of the created/updated tasks with their linking status (Project, Daily Log).
+        *   Any linking issues or other warnings.
+"""
